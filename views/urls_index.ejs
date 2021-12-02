@@ -33,6 +33,10 @@
               <td>
                 <%= urls[url] %>
               </td>
+              <td>
+                <form method="POST" action="/urls/<%= url %>/delete"><button class="btn btn-danger">Delete</button>
+                </form>
+              </td>
             </tr>
             <% } %>
         </tbody>
