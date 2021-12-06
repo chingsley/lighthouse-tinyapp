@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const { emailExists, isMissing } = require("./helpers/user");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -113,6 +114,15 @@ app.get('/register', (req, res) => {
 
 app.post('/register', (req, res) => {
   const { email, password } = req.body;
+
+  if (isMissing(email, password)) {
+    return res.status(400).send('Email and Password are required.');
+  }
+
+  if (emailExists(email, users)) {
+    return res.status(400).send('Email already exists.');
+  }
+
   const user_id = generateRandomString();
   users[user_id] = { id: user_id, email, password };
   res.cookie('user_id', user_id);
