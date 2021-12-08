@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
-const { emailExists, isMissing } = require("./helpers/user");
+const { emailExists, isMissing, findUserByEmail } = require("./helpers/user");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -97,14 +97,8 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-app.post('/login', (req, res) => {
-  const { username } = req.body;
-  res.cookie('username', username);
-  res.redirect('/urls');
-});
-
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   return res.redirect('/urls');
 });
 
@@ -128,6 +122,24 @@ app.post('/register', (req, res) => {
   res.cookie('user_id', user_id);
   console.log(users);
   return res.redirect('/urls');
+});
+
+app.get('/login', (req, res) => {
+  return res.render("urls_login", { user: '' });
+});
+
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = findUserByEmail(email, users);
+  if (!user) {
+    return res.status(403).send('Invalid email and/or password. LGN01');
+  }
+  console.log({ email, password, 'user.password': user.password });
+  if (user.password !== password) {
+    return res.status(403).send('Invalid email and/or password. LGN02');
+  }
+  res.cookie('user_id', user.id);
+  res.redirect('/urls');
 });
 
 // ..............
