@@ -23,8 +23,20 @@ function emailExists(email, users) {
   return false;
 }
 
+function getUserUrls(userID, urlDatabase) {
+  const result = [];
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].userID === userID) {
+      result.push(urlDatabase[key]);
+    }
+  }
+
+  return result;
+}
+
 module.exports = {
   isMissing,
   findUserByEmail,
-  emailExists
+  emailExists,
+  getUserUrls
 };
