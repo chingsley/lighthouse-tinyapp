@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
-const { emailExists, isMissing, findUserByEmail } = require("./helpers/user");
+const { emailExists, isMissing, findUserByEmail, urlsForUser } = require("./helpers/user");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -11,12 +11,6 @@ app.set("view engine", "ejs");
 const PORT = 8080; // default port 8080
 const SHORT_URL_LENGTH = 6;
 
-
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
-
 const urlDatabase = {
   b2xVn2: {
     longURL: "http://www.lighthouselabs.ca",
@@ -24,11 +18,11 @@ const urlDatabase = {
   },
   '9sm5xK': {
     longURL: "http://www.google.com",
-    userID: "user2RandomID"
+    userID: "userRandomID"
   },
   t4bpjs: {
     longURL: "https://www.tsn.ca",
-    userID: "user3RandomID"
+    userID: "user2RandomID"
   }
 };
 
@@ -44,7 +38,7 @@ const users = {
     password: "dishwasher-funk"
   },
   "user3RandomID": {
-    id: "user23andomID",
+    id: "user3RandomID",
     email: "eneja.kc@gmail.com",
     password: "testing"
   }
@@ -80,8 +74,12 @@ app.post("/urls", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const user_id = req.cookies['user_id'];
+  console.log({ user_id }, users[user_id]);
+  if (!user_id) {
+    return res.status(401).send('you must be logged in to view urls');
+  }
   const templateVars = {
-    urls: urlDatabase,
+    urls: urlsForUser(user_id, urlDatabase),
     user: users[user_id]
   };
   res.render("urls_index", templateVars);
@@ -101,6 +99,10 @@ app.get("/urls/:shortURL", (req, res) => {
 
   if (!urlDatabase[shortURL]) {
     return res.status(404).send(`shortURL ${shortURL} not found`);
+  }
+
+  if (!urlsForUser(user_id, urlDatabase)[shortURL]) {
+    return res.status(401).send('access denied... you can only access your own url');
   }
 
   const templateVars = {
@@ -136,7 +138,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
-  return res.redirect('/urls');
+  return res.redirect('/login');
 });
 
 app.get('/register', (req, res) => {
