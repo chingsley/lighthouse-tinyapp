@@ -1,15 +1,24 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+// const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
+const bcrypt = require('bcryptjs');
 const { emailExists, isMissing, findUserByEmail, urlsForUser } = require("./helpers/user");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['kjkhhkhkhkhkh'],
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 app.set("view engine", "ejs");
 
 const PORT = 8080; // default port 8080
 const SHORT_URL_LENGTH = 6;
+const SALT_LENGTH = 10;
 
 const urlDatabase = {
   b2xVn2: {
@@ -30,19 +39,21 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", SALT_LENGTH)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", SALT_LENGTH)
   },
   "user3RandomID": {
     id: "user3RandomID",
     email: "eneja.kc@gmail.com",
-    password: "testing"
+    password: bcrypt.hashSync("testing", SALT_LENGTH)
   }
 };
+
+// console.log(users);
 
 const randomChar = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -58,7 +69,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  const user_id = req.cookies['user_id'];
+  const user_id = req.session.user_id;
   if (!user_id) {
     return res.status(401).redirect('/login');
   }
@@ -73,7 +84,7 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const user_id = req.cookies['user_id'];
+  const user_id = req.session.user_id;
   console.log({ user_id }, users[user_id]);
   if (!user_id) {
     return res.status(401).send('you must be logged in to view urls');
@@ -86,7 +97,7 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  const user_id = req.cookies['user_id'];
+  const user_id = req.session.user_id;
   if (!user_id) {
     return res.status(401).redirect('/login');
   }
@@ -94,7 +105,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const user_id = req.cookies['user_id'];
+  const user_id = req.session.user_id;
   const { shortURL } = req.params;
 
   if (!urlDatabase[shortURL]) {
@@ -138,6 +149,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
+  req.session.user_id = null;
   return res.redirect('/login');
 });
 
@@ -158,7 +170,7 @@ app.post('/register', (req, res) => {
 
   const user_id = generateRandomString();
   users[user_id] = { id: user_id, email, password };
-  res.cookie('user_id', user_id);
+  req.session.user_id = user_id;
   console.log(users);
   return res.redirect('/urls');
 });
@@ -174,10 +186,10 @@ app.post('/login', (req, res) => {
     return res.status(403).send('Invalid email and/or password. LGN01');
   }
   console.log({ email, password, 'user.password': user.password });
-  if (user.password !== password) {
+  if (!bcrypt.compareSync(password, user.password)) {
     return res.status(403).send('Invalid email and/or password. LGN02');
   }
-  res.cookie('user_id', user.id);
+  req.session.user_id = user.id;
   res.redirect('/urls');
 });
 
