@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
 const { emailExists, isMissing, findUserByEmail, urlsForUser } = require("./helpers/user");
 
 const app = express();
@@ -10,6 +11,7 @@ app.set("view engine", "ejs");
 
 const PORT = 8080; // default port 8080
 const SHORT_URL_LENGTH = 6;
+const SALT_LENGTH = 10;
 
 const urlDatabase = {
   b2xVn2: {
@@ -30,17 +32,17 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", SALT_LENGTH)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", SALT_LENGTH)
   },
   "user3RandomID": {
     id: "user3RandomID",
     email: "eneja.kc@gmail.com",
-    password: "testing"
+    password: bcrypt.hashSync("testing", SALT_LENGTH)
   }
 };
 
@@ -174,7 +176,7 @@ app.post('/login', (req, res) => {
     return res.status(403).send('Invalid email and/or password. LGN01');
   }
   console.log({ email, password, 'user.password': user.password });
-  if (user.password !== password) {
+  if (!bcrypt.compareSync(password, user.password)) {
     return res.status(403).send('Invalid email and/or password. LGN02');
   }
   res.cookie('user_id', user.id);
