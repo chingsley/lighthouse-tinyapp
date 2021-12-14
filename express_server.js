@@ -1,4 +1,5 @@
 const express = require("express");
+var methodOverride = require('method-override');
 const bodyParser = require("body-parser");
 // const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
@@ -7,6 +8,7 @@ const { emailExists, isMissing, findUserByEmail, urlsForUser } = require("./help
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(methodOverride('_method'));
 app.use(cookieSession({
   name: 'session',
   keys: ['kjkhhkhkhkhkh'],
@@ -124,7 +126,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-app.post("/urls/:shortURL", (req, res) => {
+app.put("/urls/:shortURL", (req, res) => {
   const { shortURL } = req.params;
   const { updatedURL } = req.body;
   urlDatabase[shortURL].longURL = updatedURL;
@@ -132,7 +134,7 @@ app.post("/urls/:shortURL", (req, res) => {
   res.redirect('/urls');
 });
 
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.delete("/urls/:shortURL", (req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 });
