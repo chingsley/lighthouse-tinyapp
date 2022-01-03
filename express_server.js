@@ -135,6 +135,10 @@ app.put("/urls/:shortURL", (req, res) => {
 });
 
 app.delete("/urls/:shortURL", (req, res) => {
+  const user_id = req.session.user_id;
+  if (!user_id) {
+    return res.status(401).redirect('/login');
+  }
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 });
